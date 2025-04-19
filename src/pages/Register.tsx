@@ -1,35 +1,22 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthCard from "@/components/AuthCard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-
-const branches = [
-  "Computer Science Engineering",
-  "Information Technology",
-  "Electronics & Communication",
-  "Electrical Engineering",
-  "Mechanical Engineering",
-  "Civil Engineering",
-  "Chemical Engineering",
-];
-
-const graduationYears = Array.from({ length: 15 }, (_, i) => (new Date().getFullYear() - 10 + i).toString());
+import StudentRegistrationForm from "@/components/forms/StudentRegistrationForm";
+import AlumniRegistrationForm from "@/components/forms/AlumniRegistrationForm";
+import type { RegistrationFormData } from "@/types/auth";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userType, setUserType] = useState("student");
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegistrationFormData>({
     name: "",
     email: "",
     password: "",
@@ -45,7 +32,7 @@ const Register = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -139,229 +126,23 @@ const Register = () => {
             </TabsList>
             
             <TabsContent value="student">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student-name">Full Name</Label>
-                  <Input 
-                    id="student-name" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="student-email">Email</Label>
-                  <Input 
-                    id="student-email" 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="student-password">Password</Label>
-                    <Input 
-                      id="student-password" 
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="student-confirm-password">Confirm Password</Label>
-                    <Input 
-                      id="student-confirm-password" 
-                      type="password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="student-institute">Institute</Label>
-                  <Input 
-                    id="student-institute" 
-                    name="institute"
-                    value={formData.institute}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="student-branch">Branch</Label>
-                    <Select onValueChange={(value) => handleSelectChange("branch", value)}>
-                      <SelectTrigger id="student-branch">
-                        <SelectValue placeholder="Select Branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="student-year">Expected Graduation Year</Label>
-                    <Select onValueChange={(value) => handleSelectChange("graduationYear", value)}>
-                      <SelectTrigger id="student-year">
-                        <SelectValue placeholder="Select Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {graduationYears.map((year) => (
-                          <SelectItem key={year} value={year}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="student-terms" 
-                    checked={formData.agreeTerms}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreeTerms: checked as boolean }))}
-                    required
-                  />
-                  <Label htmlFor="student-terms" className="text-sm">
-                    I agree to the{" "}
-                    <Link to="/terms" className="text-primary hover:underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link to="/privacy" className="text-primary hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating Account..." : "Create Account"}
-                </Button>
-              </form>
+              <StudentRegistrationForm 
+                formData={formData}
+                loading={loading}
+                handleChange={handleChange}
+                handleSelectChange={handleSelectChange}
+                handleSubmit={handleSubmit}
+              />
             </TabsContent>
             
             <TabsContent value="alumni">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="alumni-name">Full Name</Label>
-                  <Input 
-                    id="alumni-name" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni-email">Email</Label>
-                  <Input 
-                    id="alumni-email" 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="alumni-password">Password</Label>
-                    <Input 
-                      id="alumni-password" 
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="alumni-confirm-password">Confirm Password</Label>
-                    <Input 
-                      id="alumni-confirm-password" 
-                      type="password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni-institute">Institute</Label>
-                  <Input 
-                    id="alumni-institute" 
-                    name="institute"
-                    value={formData.institute}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="alumni-branch">Branch</Label>
-                    <Select onValueChange={(value) => handleSelectChange("branch", value)}>
-                      <SelectTrigger id="alumni-branch">
-                        <SelectValue placeholder="Select Branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="alumni-year">Graduation Year</Label>
-                    <Select onValueChange={(value) => handleSelectChange("graduationYear", value)}>
-                      <SelectTrigger id="alumni-year">
-                        <SelectValue placeholder="Select Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {graduationYears.map((year) => (
-                          <SelectItem key={year} value={year}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="alumni-terms" 
-                    checked={formData.agreeTerms}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreeTerms: checked as boolean }))}
-                    required
-                  />
-                  <Label htmlFor="alumni-terms" className="text-sm">
-                    I agree to the{" "}
-                    <Link to="/terms" className="text-primary hover:underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link to="/privacy" className="text-primary hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating Account..." : "Create Account"}
-                </Button>
-              </form>
+              <AlumniRegistrationForm 
+                formData={formData}
+                loading={loading}
+                handleChange={handleChange}
+                handleSelectChange={handleSelectChange}
+                handleSubmit={handleSubmit}
+              />
             </TabsContent>
           </Tabs>
         </AuthCard>
