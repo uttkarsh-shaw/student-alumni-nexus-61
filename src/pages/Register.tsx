@@ -10,7 +10,7 @@ import AuthCard from "@/components/AuthCard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
-import { createClientComponentClient } from '@supabase/auth-helpers-react';
+import { supabase } from "@/lib/supabase";
 
 const branches = [
   "Computer Science Engineering",
@@ -27,7 +27,6 @@ const graduationYears = Array.from({ length: 15 }, (_, i) => (new Date().getFull
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const supabase = createClientComponentClient();
   const [userType, setUserType] = useState("student");
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
