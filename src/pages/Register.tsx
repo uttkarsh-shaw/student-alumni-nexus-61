@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthCard from "@/components/AuthCard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import { useToast } from "@/hooks/use-toast";
+import { createClientComponentClient } from '@supabase/auth-helpers-react';
 
 const branches = [
   "Computer Science Engineering",
@@ -24,7 +25,11 @@ const branches = [
 const graduationYears = Array.from({ length: 15 }, (_, i) => (new Date().getFullYear() - 10 + i).toString());
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const supabase = createClientComponentClient();
   const [userType, setUserType] = useState("student");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -45,10 +50,61 @@ const Register = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Registration attempt:", { userType, ...formData });
-    // Here you would normally handle registration
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.agreeTerms) {
+      toast({
+        title: "Error",
+        description: "Please agree to the Terms of Service and Privacy Policy",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+            user_type: userType,
+            institute: formData.institute,
+            branch: formData.branch,
+            graduation_year: formData.graduationYear,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      if (authData) {
+        toast({
+          title: "Success",
+          description: "Registration successful! Please check your email for verification.",
+        });
+        navigate('/login');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during registration",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -190,7 +246,9 @@ const Register = () => {
                     </Link>
                   </Label>
                 </div>
-                <Button type="submit" className="w-full">Create Account</Button>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Creating Account..." : "Create Account"}
+                </Button>
               </form>
             </TabsContent>
             
@@ -301,7 +359,9 @@ const Register = () => {
                     </Link>
                   </Label>
                 </div>
-                <Button type="submit" className="w-full">Create Account</Button>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Creating Account..." : "Create Account"}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
