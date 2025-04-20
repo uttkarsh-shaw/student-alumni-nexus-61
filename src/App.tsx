@@ -12,6 +12,7 @@ import Forum from "./pages/Forum";
 import Mentorship from "./pages/Mentorship";
 import Events from "./pages/Events";
 import Alumni from "./pages/Alumni";
+import ChatBot from "./components/ChatBot";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatBot />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
