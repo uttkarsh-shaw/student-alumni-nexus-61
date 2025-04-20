@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,17 +9,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthCard from "@/components/AuthCard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState("student");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Login attempt:", { email, password, userType, rememberMe });
-    // Here you would normally handle authentication
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.session) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to log in",
+        variant: "destructive",
+      });
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,6 +98,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -80,6 +114,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -87,10 +122,13 @@ const Login = () => {
                     id="student-remember" 
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor="student-remember" className="text-sm">Remember me</Label>
                 </div>
-                <Button type="submit" className="w-full">Sign In</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Logging in..." : "Sign In"}
+                </Button>
               </form>
             </TabsContent>
             
@@ -105,6 +143,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -120,6 +159,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -127,10 +167,13 @@ const Login = () => {
                     id="alumni-remember" 
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor="alumni-remember" className="text-sm">Remember me</Label>
                 </div>
-                <Button type="submit" className="w-full">Sign In</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Logging in..." : "Sign In"}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
