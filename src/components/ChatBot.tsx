@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Loader2 } from "lucide-react";
+import { supabase } from '@/lib/supabase';
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   text: string;
@@ -16,22 +18,38 @@ const ChatBot = () => {
     { text: "Hi! How can I help you today?", isBot: true }
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading) return;
     
     // Add user message
     setMessages(prev => [...prev, { text: input, isBot: false }]);
+    setIsLoading(true);
     
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { message: input }
+      });
+
+      if (error) throw error;
+
       setMessages(prev => [...prev, { 
-        text: "Thanks for your message! This is a demo response. The chatbot functionality can be enhanced with AI integration.",
+        text: data.response,
         isBot: true 
       }]);
-    }, 1000);
-    
-    setInput("");
+    } catch (error) {
+      console.error('Chat error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get response. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setInput("");
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -82,14 +100,22 @@ const ChatBot = () => {
             ))}
           </CardContent>
           <div className="p-4 border-t">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              className="min-h-[60px] resize-none"
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                className="min-h-[60px] resize-none pr-10"
+                rows={2}
+                disabled={isLoading}
+              />
+              {isLoading && (
+                <div className="absolute right-2 bottom-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       )}
