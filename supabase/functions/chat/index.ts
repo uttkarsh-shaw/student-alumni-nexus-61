@@ -19,7 +19,10 @@ serve(async (req) => {
     if (!openAIKey) {
       console.error('OPENAI_API_KEY is not set in environment variables')
       return new Response(
-        JSON.stringify({ error: 'API key not configured', response: "I'm sorry, I can't connect to my AI service right now. Please check your API key configuration." }),
+        JSON.stringify({ 
+          error: 'API key not configured', 
+          response: "I'm sorry, I can't connect to my AI service right now. Please check your API key configuration." 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       )
     }
@@ -47,10 +50,16 @@ serve(async (req) => {
         const errorData = await response.json()
         console.error('OpenAI API error:', errorData)
         
-        // Return a fallback response instead of throwing an error
+        let errorMessage = "I'm experiencing some technical difficulties right now. Please try again later."
+        
+        // Check for quota exceeded error
+        if (errorData.error && errorData.error.code === "insufficient_quota") {
+          errorMessage = "I'm sorry, the AI service is currently unavailable due to usage limits. Please contact the administrator to update the OpenAI API subscription."
+        }
+        
         return new Response(
           JSON.stringify({ 
-            response: "I'm experiencing some technical difficulties right now. Please try again later.",
+            response: errorMessage,
             error: `OpenAI API returned an error: ${response.status}`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

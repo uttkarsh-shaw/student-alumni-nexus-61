@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, X, Loader2 } from "lucide-react";
+import { MessageCircle, X, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Message {
   text: string;
@@ -19,6 +20,7 @@ const ChatBot = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSendMessage = async () => {
@@ -29,6 +31,7 @@ const ChatBot = () => {
     setMessages(prev => [...prev, { text: userMessage, isBot: false }]);
     setInput("");
     setIsLoading(true);
+    setApiError(null);
     
     try {
       // Call the Supabase Edge Function
@@ -42,7 +45,6 @@ const ChatBot = () => {
       }
 
       // Always use the response from the edge function if available
-      // The edge function now always returns a response, even in error cases
       if (data && data.response) {
         setMessages(prev => [...prev, { 
           text: data.response,
@@ -52,11 +54,17 @@ const ChatBot = () => {
         // If there was an error but we still got a response, show a toast
         if (data.error) {
           console.warn('Edge function warning:', data.error);
-          toast({
-            title: "Warning",
-            description: "The AI assistant is experiencing some issues, but is still trying to help.",
-            variant: "default",
-          });
+          
+          // Check if it's an OpenAI quota error
+          if (data.error.includes('429')) {
+            setApiError("The AI assistant is currently unavailable due to usage limits. Please try again later or contact the administrator.");
+          } else {
+            toast({
+              title: "Warning",
+              description: "The AI assistant is experiencing some issues, but is still trying to help.",
+              variant: "default",
+            });
+          }
         }
       } else {
         // This should rarely happen now, but just in case
@@ -70,6 +78,8 @@ const ChatBot = () => {
         text: "I'm sorry, I couldn't process your request right now. Please try again later.",
         isBot: true 
       }]);
+      
+      setApiError("Failed to connect to the chat service. Please try again later.");
       
       toast({
         title: "Error",
@@ -111,6 +121,15 @@ const ChatBot = () => {
             </Button>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto p-4 space-y-4">
+            {apiError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  {apiError}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {messages.map((message, index) => (
               <div
                 key={index}
