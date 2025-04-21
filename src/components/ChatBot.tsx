@@ -55,9 +55,11 @@ const ChatBot = () => {
         if (data.error) {
           console.warn('Edge function warning:', data.error);
           
-          // Check if it's an OpenAI quota error
-          if (data.error.includes('429')) {
+          // Check if it's an OpenAI or Perplexity quota error
+          if (data.error.includes('429') || data.error.includes('quota') || data.error.includes('limit')) {
             setApiError("The AI assistant is currently unavailable due to usage limits. Please try again later or contact the administrator.");
+          } else if (data.error.includes('No AI service configured')) {
+            setApiError("The AI assistant is not properly configured. Please contact the administrator to set up API keys.");
           } else {
             toast({
               title: "Warning",
