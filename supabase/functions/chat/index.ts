@@ -19,9 +19,25 @@ serve(async (req) => {
     const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY')
     const openAIKey = Deno.env.get('OPENAI_API_KEY')
     
+    console.log(`API Keys available: Perplexity: ${perplexityKey ? 'Yes' : 'No'}, OpenAI: ${openAIKey ? 'Yes' : 'No'}`)
+    
+    // Diagnostic - confirm we received a message
+    console.log(`Processing message: ${message ? 'Message received' : 'No message received'}`)
+    
+    // Status tracking for debugging
+    let apiStatus = {
+      perplexityTried: false,
+      perplexityError: null,
+      openAITried: false,
+      openAIError: null
+    }
+    
     // Determine which API to use (prefer Perplexity, fallback to OpenAI)
     if (perplexityKey) {
       try {
+        apiStatus.perplexityTried = true
+        console.log('Attempting Perplexity API request...')
+        
         const response = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
           headers: {
@@ -44,19 +60,38 @@ serve(async (req) => {
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error('Perplexity API error:', errorData)
-          throw new Error(`Perplexity API returned an error: ${response.status}`)
+          console.error('Perplexity API error details:', JSON.stringify(errorData))
+          
+          // Check for specific Perplexity error codes
+          let statusCode = response.status
+          let errorMessage = ''
+          
+          if (statusCode === 429) {
+            errorMessage = 'Perplexity rate limit exceeded'
+          } else if (statusCode === 401 || statusCode === 403) {
+            errorMessage = 'Perplexity authentication error'
+          } else {
+            errorMessage = `Perplexity API error: ${statusCode}`
+          }
+          
+          apiStatus.perplexityError = errorMessage
+          throw new Error(errorMessage)
         }
 
         const data = await response.json()
         const aiResponse = data.choices[0].message.content
+        console.log('Perplexity API request successful')
 
         return new Response(
-          JSON.stringify({ response: aiResponse }),
+          JSON.stringify({ response: aiResponse, provider: 'perplexity' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       } catch (perplexityError) {
         console.error('Perplexity API communication error:', perplexityError)
+        
+        if (!apiStatus.perplexityError) {
+          apiStatus.perplexityError = perplexityError.message
+        }
         
         // If Perplexity fails, try OpenAI as fallback if available
         if (openAIKey) {
@@ -65,7 +100,8 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               response: "I'm having trouble connecting to my AI service right now. Please try again in a moment.",
-              error: perplexityError.message 
+              error: perplexityError.message,
+              diagnostics: apiStatus
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
@@ -76,6 +112,9 @@ serve(async (req) => {
     // If Perplexity key is not available or it failed, try OpenAI if we have a key
     if (openAIKey) {
       try {
+        apiStatus.openAITried = true
+        console.log('Attempting OpenAI API request...')
+        
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -96,19 +135,28 @@ serve(async (req) => {
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error('OpenAI API error:', errorData)
+          console.error('OpenAI API error details:', JSON.stringify(errorData))
           
           let errorMessage = "I'm experiencing some technical difficulties right now. Please try again later."
           
-          // Check for quota exceeded error
-          if (errorData.error && errorData.error.code === "insufficient_quota") {
-            errorMessage = "I'm sorry, the AI service is currently unavailable due to usage limits. Please contact the administrator to update the OpenAI API subscription."
+          // Check for specific OpenAI error codes
+          if (errorData.error) {
+            if (errorData.error.code === "insufficient_quota") {
+              errorMessage = "I'm sorry, the AI service is currently unavailable due to usage limits. Please contact the administrator to update the OpenAI API subscription."
+              apiStatus.openAIError = "OpenAI quota exceeded"
+            } else if (errorData.error.code === "invalid_api_key") {
+              errorMessage = "There's an issue with the AI service configuration. Please contact the administrator."
+              apiStatus.openAIError = "OpenAI invalid API key"
+            } else {
+              apiStatus.openAIError = `OpenAI error: ${errorData.error.code || errorData.error.type}`
+            }
           }
           
           return new Response(
             JSON.stringify({ 
               response: errorMessage,
-              error: `OpenAI API returned an error: ${response.status}`
+              error: `OpenAI API returned an error: ${response.status}`,
+              diagnostics: apiStatus
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
@@ -116,30 +164,34 @@ serve(async (req) => {
 
         const data = await response.json()
         const aiResponse = data.choices[0].message.content
+        console.log('OpenAI API request successful')
 
         return new Response(
-          JSON.stringify({ response: aiResponse }),
+          JSON.stringify({ response: aiResponse, provider: 'openai' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       } catch (openAIError) {
         console.error('OpenAI API communication error:', openAIError)
+        apiStatus.openAIError = openAIError.message
         
         // Return a fallback response for OpenAI-specific errors
         return new Response(
           JSON.stringify({ 
             response: "I'm having trouble connecting to my brain right now. Please try again in a moment.",
-            error: openAIError.message 
+            error: openAIError.message,
+            diagnostics: apiStatus
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
     }
     
-    // If we reach here, no API keys are available
+    // If we reach here, no API keys are available or both APIs failed
     return new Response(
       JSON.stringify({ 
-        error: 'No AI service configured', 
-        response: "I'm sorry, I can't connect to any AI service right now. Please check API key configuration." 
+        error: 'No AI service configured or all services failed', 
+        response: "I'm sorry, I can't connect to any AI service right now. Please check API key configuration.",
+        diagnostics: apiStatus
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
