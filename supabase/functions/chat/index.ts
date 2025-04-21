@@ -16,6 +16,14 @@ serve(async (req) => {
     const { message } = await req.json()
     const openAIKey = Deno.env.get('OPENAI_API_KEY')
 
+    if (!openAIKey) {
+      console.error('OPENAI_API_KEY is not set in environment variables')
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,6 +42,12 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('OpenAI API error:', errorData)
+      throw new Error(`OpenAI API returned an error: ${response.status}`)
+    }
+
     const data = await response.json()
     const aiResponse = data.choices[0].message.content
 
@@ -42,6 +56,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
+    console.error('Error in chat function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },

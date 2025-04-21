@@ -25,15 +25,25 @@ const ChatBot = () => {
     if (!input.trim() || isLoading) return;
     
     // Add user message
-    setMessages(prev => [...prev, { text: input, isBot: false }]);
+    const userMessage = input.trim();
+    setMessages(prev => [...prev, { text: userMessage, isBot: false }]);
+    setInput("");
     setIsLoading(true);
     
     try {
+      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('chat', {
-        body: { message: input }
+        body: { message: userMessage }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message);
+      }
+
+      if (!data || !data.response) {
+        throw new Error('Invalid response from chat service');
+      }
 
       setMessages(prev => [...prev, { 
         text: data.response,
@@ -41,14 +51,20 @@ const ChatBot = () => {
       }]);
     } catch (error) {
       console.error('Chat error:', error);
+      
+      // Add fallback bot response when API fails
+      setMessages(prev => [...prev, { 
+        text: "I'm sorry, I couldn't process your request right now. Please try again later.",
+        isBot: true 
+      }]);
+      
       toast({
         title: "Error",
-        description: "Failed to get response. Please try again.",
+        description: "Failed to get AI response. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-      setInput("");
     }
   };
 
