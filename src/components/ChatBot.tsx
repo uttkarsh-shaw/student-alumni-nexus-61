@@ -41,18 +41,31 @@ const ChatBot = () => {
         throw new Error(error.message);
       }
 
-      if (!data || !data.response) {
-        throw new Error('Invalid response from chat service');
+      // Always use the response from the edge function if available
+      // The edge function now always returns a response, even in error cases
+      if (data && data.response) {
+        setMessages(prev => [...prev, { 
+          text: data.response,
+          isBot: true 
+        }]);
+        
+        // If there was an error but we still got a response, show a toast
+        if (data.error) {
+          console.warn('Edge function warning:', data.error);
+          toast({
+            title: "Warning",
+            description: "The AI assistant is experiencing some issues, but is still trying to help.",
+            variant: "default",
+          });
+        }
+      } else {
+        // This should rarely happen now, but just in case
+        throw new Error('No response received from chat service');
       }
-
-      setMessages(prev => [...prev, { 
-        text: data.response,
-        isBot: true 
-      }]);
     } catch (error) {
       console.error('Chat error:', error);
       
-      // Add fallback bot response when API fails
+      // Add fallback bot response when API fails completely
       setMessages(prev => [...prev, { 
         text: "I'm sorry, I couldn't process your request right now. Please try again later.",
         isBot: true 
@@ -60,7 +73,7 @@ const ChatBot = () => {
       
       toast({
         title: "Error",
-        description: "Failed to get AI response. Please try again.",
+        description: "Failed to get AI response. Please try again later.",
         variant: "destructive",
       });
     } finally {
