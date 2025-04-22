@@ -4,11 +4,24 @@ import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import ForumThread from "@/components/ForumThread";
+import { toast } from "@/hooks/use-toast";
 
 const Forum = () => {
   const [activeTab, setActiveTab] = useState("topics");
+  const [isCreatingThread, setIsCreatingThread] = useState(false);
+  const [newThread, setNewThread] = useState({
+    title: "",
+    description: "",
+  });
   
+  const [threads, setThreads] = useState([
+    // Initial empty state - threads will be added dynamically
+  ]);
+
   const forumTopics = [
     {
       title: "Career Advice",
@@ -36,55 +49,51 @@ const Forum = () => {
     }
   ];
 
-  const recentThreads = [
-    {
-      title: "How to prepare for a career in AI?",
-      description: "I'm a 3rd-year computer science student interested in AI and machine learning. What courses, projects, or certifications would you recommend to prepare for a career in this field?",
-      author: "StudentUser1",
-      date: "April 20, 2025",
-      replies: [
-        {
-          author: "Dr. Sarah Johnson",
-          content: "Focus on strong fundamentals in math (especially linear algebra and calculus), statistics, and programming. I'd recommend Andrew Ng's courses on Coursera as a starting point. Also, try implementing papers from arxiv.org to build your portfolio.",
-          date: "April 21, 2025",
-          isAlumni: true
-        }
-      ]
-    },
-    {
-      title: "Internship opportunities in renewable energy",
-      description: "I'm looking for summer internship opportunities in the renewable energy sector. Does anyone have connections or recommendations for companies that offer good internship programs?",
-      author: "GreenEnergyStudent",
-      date: "April 19, 2025",
-      replies: []
-    },
-    {
-      title: "Tips for networking as an introvert",
-      description: "As an introvert, I find networking events overwhelming. Alumni who are also introverts, how do you approach networking in professional settings?",
-      author: "QuietLearner",
-      date: "April 18, 2025",
-      replies: [
-        {
-          author: "Michael Chen",
-          content: "I'm an introvert too! I find one-on-one coffee meetings much more effective than large networking events. Also, come prepared with specific questions about the person's work - it makes conversation easier.",
-          date: "April 19, 2025",
-          isAlumni: true
-        }
-      ]
+  const createNewThread = () => {
+    if (!newThread.title || !newThread.description) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
     }
-  ];
+
+    const thread = {
+      title: newThread.title,
+      description: newThread.description,
+      author: "Current User", // In real app, this would come from auth
+      date: new Date().toLocaleDateString(),
+      replies: []
+    };
+
+    setThreads([thread, ...threads]);
+    setNewThread({ title: "", description: "" });
+    setIsCreatingThread(false);
+    toast({
+      title: "Thread Created",
+      description: "Your discussion thread has been created successfully"
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <main className="flex-grow bg-gray-50 dark:bg-navy-800 py-12 px-4">
         <div className="container mx-auto max-w-6xl">
-          <h1 className="text-3xl font-bold text-navy-900 dark:text-white mb-6">Forum</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-navy-900 dark:text-white">Forum</h1>
+            {activeTab === "threads" && !isCreatingThread && (
+              <Button onClick={() => setIsCreatingThread(true)}>
+                Create New Thread
+              </Button>
+            )}
+          </div>
           
           <Tabs defaultValue="topics" onValueChange={setActiveTab} className="mb-6">
             <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="topics">Forum Topics</TabsTrigger>
-              <TabsTrigger value="threads">Recent Threads</TabsTrigger>
+              <TabsTrigger value="threads">Discussion Threads</TabsTrigger>
             </TabsList>
             
             <TabsContent value="topics">
@@ -107,7 +116,40 @@ const Forum = () => {
             </TabsContent>
             
             <TabsContent value="threads">
-              {recentThreads.map((thread, index) => (
+              {isCreatingThread ? (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>Create New Thread</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block mb-2">Thread Title</label>
+                        <Input
+                          value={newThread.title}
+                          onChange={(e) => setNewThread({...newThread, title: e.target.value})}
+                          placeholder="Enter thread title"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2">Description</label>
+                        <Textarea
+                          value={newThread.description}
+                          onChange={(e) => setNewThread({...newThread, description: e.target.value})}
+                          placeholder="Enter thread description"
+                          rows={4}
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        <Button onClick={createNewThread}>Create Thread</Button>
+                        <Button variant="outline" onClick={() => setIsCreatingThread(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {threads.map((thread, index) => (
                 <ForumThread 
                   key={index}
                   title={thread.title}
@@ -117,6 +159,17 @@ const Forum = () => {
                   replies={thread.replies}
                 />
               ))}
+
+              {threads.length === 0 && !isCreatingThread && (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <p className="text-gray-500 mb-4">No discussion threads yet</p>
+                    <Button onClick={() => setIsCreatingThread(true)}>
+                      Start a New Discussion
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
         </div>
