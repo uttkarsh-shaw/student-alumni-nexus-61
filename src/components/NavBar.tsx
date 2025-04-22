@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { Menu, X } from "lucide-react";
+import AccountMenu from "./AccountMenu";
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,14 +32,7 @@ const NavBar = () => {
           <Link to="/mentorship" className="nav-link">Mentorship</Link>
           <Link to="/events" className="nav-link">Events</Link>
           <Link to="/alumni" className="nav-link">Alumni</Link>
-          <div className="flex space-x-2">
-            <Button variant="outline" asChild>
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/register">Register</Link>
-            </Button>
-          </div>
+          <AccountMenu />
         </div>
         
         {/* Mobile Navigation */}
@@ -69,12 +62,7 @@ const NavBar = () => {
                   <Link to="/alumni" className="nav-link py-2" onClick={closeMenu}>Alumni</Link>
                 </div>
                 <div className="mt-auto flex flex-col space-y-2 py-4">
-                  <Button variant="outline" asChild className="w-full">
-                    <Link to="/login" onClick={closeMenu}>Login</Link>
-                  </Button>
-                  <Button asChild className="w-full">
-                    <Link to="/register" onClick={closeMenu}>Register</Link>
-                  </Button>
+                  <AccountMenu />
                 </div>
               </div>
             </SheetContent>
