@@ -20,8 +20,8 @@ const LiveSession = () => {
     description: "Learn about various career paths in the technology sector and how to prepare for them. Dr. Johnson will share insights from her 15 years of industry experience."
   };
   
-  const formatDate = (dateString) => {
-    const options = { 
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric', 

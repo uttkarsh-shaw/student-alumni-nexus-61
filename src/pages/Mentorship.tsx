@@ -62,8 +62,8 @@ const Mentorship = () => {
     }
   ];
 
-  const formatDate = (dateString) => {
-    const options = { 
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric', 
