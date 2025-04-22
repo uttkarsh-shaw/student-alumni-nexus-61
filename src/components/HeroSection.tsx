@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -19,7 +18,7 @@ const HeroSection = () => {
               <Button size="lg" className="bg-amber-500 text-navy-900 hover:bg-amber-600" asChild>
                 <Link to="/register">Join the Network</Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" asChild>
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 bg-blue-500 hover:bg-blue-600" asChild>
                 <Link to="/about">Learn More</Link>
               </Button>
             </div>

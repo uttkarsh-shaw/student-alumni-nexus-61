@@ -12,6 +12,7 @@ import Forum from "./pages/Forum";
 import Mentorship from "./pages/Mentorship";
 import Events from "./pages/Events";
 import Alumni from "./pages/Alumni";
+import LiveSession from "./pages/LiveSession";
 import ChatBot from "./components/ChatBot";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/mentorship" element={<Mentorship />} />
           <Route path="/events" element={<Events />} />
           <Route path="/alumni" element={<Alumni />} />
+          <Route path="/live-session/:sessionId" element={<LiveSession />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
