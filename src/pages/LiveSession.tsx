@@ -12,6 +12,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const ZEGOCLOUD_APP_ID = 183763345;
+const ZEGOCLOUD_SERVER_SECRET = "730df798fa9af6cc31817125f4161804";
 
 const LiveSession = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -25,6 +26,7 @@ const LiveSession = () => {
   });
   const [user, setUser] = useState<any>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [liveRole, setLiveRole] = useState<'Host' | 'Audience' | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -43,9 +45,8 @@ const LiveSession = () => {
       }
     };
     // eslint-disable-next-line
-  }, [sessionStatus]);
+  }, [sessionStatus, liveRole]); // Also depend on liveRole
 
-  // Util: Load the ZEGOCLOUD SDK if not yet on page
   const loadZegoSdk = () => {
     return new Promise<void>((resolve, reject) => {
       if ((window as any).ZegoUIKitPrebuilt) {
@@ -60,23 +61,17 @@ const LiveSession = () => {
     });
   };
 
-  // For demo only: Token generation here is NOT secure, should be by backend in production.
   function generateKitToken(roomId: string, userId: string, userName: string) {
-    // For demo, use token generation provided in SDK (not secure for production!)
-    // https://github.com/ZEGOCLOUD/zego_uikit_prebuilt_call_example_web/blob/main/token.js
-    // This is a huge security risk, should use Supabase Edge Function for real.
-    // Here we just construct a "fake" token for the frontend demo.
     if (!(window as any).ZegoUIKitPrebuilt) return "";
     return (window as any).ZegoUIKitPrebuilt.generateKitTokenForTest(
       ZEGOCLOUD_APP_ID,
-      "730df798fa9af6cc31817125f4161804", // NOT SECURE, move to backend in prod!
+      ZEGOCLOUD_SERVER_SECRET,
       roomId,
       userId,
       userName
     );
   }
 
-  // Actually connect to ZegoCloud and show video view
   const joinVideoRoom = async () => {
     await loadZegoSdk();
     const roomId = sessionId || "demo-room";
@@ -86,13 +81,27 @@ const LiveSession = () => {
     const kitToken = generateKitToken(roomId, uid, uname);
 
     if (!(window as any).ZegoUIKitPrebuilt || !videoContainerRef.current || !kitToken) return;
+
+    // Role and scenario setup
+    let role = liveRole || "Audience";
+    let scenario = {
+      mode: "LiveStreaming",
+      config: { role: role }
+    };
+
     const zp = (window as any).ZegoUIKitPrebuilt.create(videoContainerRef.current, {
       appId: ZEGOCLOUD_APP_ID,
       kitToken,
       userID: uid,
       userName: uname,
-      scenario: { mode: "GroupCall" },
-      // Optionally add hooks here: onJoinRoom, onLeaveRoom, etc.
+      scenario,
+      turnOnCameraWhenJoining: true,
+      showMyCameraToggleButton: true,
+      showAudioVideoSettingsButton: true,
+      showScreenSharingButton: true,
+      showTextChat: true,
+      showUserList: true
+      // If you want more UI controls (like mic toggle) they can be added too.
     });
     (window as any).zegoClient = zp;
     zp.joinRoom();
@@ -109,7 +118,7 @@ const LiveSession = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Demo: When creating, just start the session and go live with current user as host
+  // Demo: When creating, go live as Host
   const createSession = () => {
     if (!sessionData.title || !sessionData.description || !sessionData.scheduled) {
       toast({
@@ -119,8 +128,12 @@ const LiveSession = () => {
       });
       return;
     }
-
-    setSessionData({...sessionData, host: user?.user_metadata?.full_name || user?.email || "Current User", participants: 1 });
+    setSessionData({
+      ...sessionData,
+      host: user?.user_metadata?.full_name || user?.email || "Current User",
+      participants: 1
+    });
+    setLiveRole("Host");
     setSessionStatus("in-session");
     setIsCreatingSession(false);
     toast({
@@ -129,8 +142,9 @@ const LiveSession = () => {
     });
   };
 
-  // Demo: Simply change status to simulate joining
+  // Anyone who joins uses Audience
   const joinSession = () => {
+    setLiveRole("Audience");
     setSessionStatus("joining");
     setTimeout(() => {
       setSessionStatus("in-session");
@@ -146,6 +160,7 @@ const LiveSession = () => {
       host: "Current User",
       participants: 0
     });
+    setLiveRole(null);
     if ((window as any).zegoClient) {
       (window as any).zegoClient.destroy();
       (window as any).zegoClient = undefined;
@@ -308,3 +323,4 @@ const LiveSession = () => {
 };
 
 export default LiveSession;
+
