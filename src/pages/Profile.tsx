@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { UserProfile } from "@/types/user";
+import type { Database } from "@/types/supabase";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 const Profile = () => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,18 +19,17 @@ const Profile = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
           .single();
-        
+
         if (data && !error) {
           setProfile(data);
         }
       }
       setLoading(false);
     }
-    
     loadProfile();
   }, []);
 
