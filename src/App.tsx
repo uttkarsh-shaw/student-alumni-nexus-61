@@ -15,6 +15,7 @@ import LiveSession from "./pages/LiveSession";
 import ChatBot from "./components/ChatBot";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import AccountDetails from "./pages/AccountDetails";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/live-session/:sessionId" element={<LiveSession />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/account" element={<AccountDetails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <ChatBot />
