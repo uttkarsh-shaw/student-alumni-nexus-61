@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +5,7 @@ import AuthCard from "@/components/AuthCard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import StudentRegistrationForm from "@/components/forms/StudentRegistrationForm";
 import AlumniRegistrationForm from "@/components/forms/AlumniRegistrationForm";
 import type { RegistrationFormData } from "@/types/auth";
@@ -52,16 +51,6 @@ const Register = () => {
       toast({
         title: "Error",
         description: "Please agree to the Terms of Service and Privacy Policy",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if Supabase is properly configured before attempting registration
-    if (!isSupabaseConfigured()) {
-      toast({
-        title: "Configuration Error",
-        description: "Supabase is not properly configured. Please set the environment variables.",
         variant: "destructive",
       });
       return;
